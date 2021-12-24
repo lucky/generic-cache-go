@@ -19,15 +19,14 @@ func assertVal[K comparable, V comparable](t *testing.T, c Cache[K, V], key K, e
 	}
 }
 
-func TestBlockingCache(t *testing.T) {
+func testCache(t *testing.T, c Cache[string, int]) {
 	expected := rand.Int()
 	key := "foobar"
-	c := NewBlockingCache[string, int]()
-	assertVal[string, int](t, c, key, expected, func() (int, error) {
+	assertVal(t, c, key, expected, func() (int, error) {
 		return expected, nil
 	})
 
-	assertVal[string, int](t, c, key, expected, func() (int, error) {
+	assertVal(t, c, key, expected, func() (int, error) {
 		panic("This should never be called")
 	})
 
@@ -40,7 +39,7 @@ func TestBlockingCache(t *testing.T) {
 		go func() {
 			<-start
 
-			assertVal[string, int](t, c, key, expected, func() (int, error) {
+			assertVal(t, c, key, expected, func() (int, error) {
 				panic("This should never be called")
 			})
 			complete.Done()
@@ -50,8 +49,7 @@ func TestBlockingCache(t *testing.T) {
 	complete.Wait()
 }
 
-func TestBlockingCacheConcurrency(t *testing.T) {
-	c := NewBlockingCache[string, int]()
+func testCacheConcurrency(t *testing.T, c Cache[string, int]) {
 	start := make(chan interface{})
 
 	var complete sync.WaitGroup
@@ -70,4 +68,24 @@ func TestBlockingCacheConcurrency(t *testing.T) {
 	}
 	close(start)
 	complete.Wait()
+}
+
+func TestBlockingCache(t *testing.T) {
+	c := NewBlockingCache[string, int]()
+	testCache(t, c)
+}
+
+func TestBlockingCacheConcurrency(t *testing.T) {
+	c := NewBlockingCache[string, int]()
+	testCacheConcurrency(t, c)
+}
+
+func TestNonBlockingCache(t *testing.T) {
+	c := NewNonBlockingCache[string, int]()
+	testCache(t, c)
+}
+
+func TestNonBlockingCacheConcurrency(t *testing.T) {
+	c := NewNonBlockingCache[string, int]()
+	testCacheConcurrency(t, c)
 }
