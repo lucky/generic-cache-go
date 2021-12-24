@@ -1,0 +1,1 @@
+At the moment this is just a way for me to test out generics and brush up on my golang.
