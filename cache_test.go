@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
@@ -41,6 +42,28 @@ func TestBlockingCache(t *testing.T) {
 
 			assertVal[string, int](t, c, key, expected, func() (int, error) {
 				panic("This should never be called")
+			})
+			complete.Done()
+		}()
+	}
+	close(start)
+	complete.Wait()
+}
+
+func TestBlockingCacheConcurrency(t *testing.T) {
+	c := NewBlockingCache[string, int]()
+	start := make(chan interface{})
+
+	var complete sync.WaitGroup
+
+	for i := 0; i < 1000; i++ {
+		complete.Add(1)
+		key := fmt.Sprintf("key-%d", i)
+		go func() {
+			<-start
+
+			c.Get(key, func() (int, error) {
+				return rand.Int(), nil
 			})
 			complete.Done()
 		}()
